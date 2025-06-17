@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Kamé e Kairu - Lógica com Setas</title>
+  <style>
+    /* Corrigindo altura e margem do body */
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    /* Layout do body */
+    body {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      font-family: sans-serif;
+      text-align: center;
+      background-image: url("aldeira_2.png");
+      background-repeat: no-repeat;
+      background-size: cover;
+      background-position: center;
+    }
+
+    h1 {
+      color: #2c3e50;
+      background: rgba(255, 255, 255, 0.7);
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 2em;
+      margin-bottom: 20px;
+    }
+
+    /* Grid do Jogo */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(5, 80px);
+      grid-template-rows: repeat(5, 80px);
+      gap: 6px;
+      margin: 20px auto;
+      width: max-content;
+      flex: 0;  /* Faz a grid ocupar o restante do espaço */
+    }
+
+    /* Estilos para células da grid */
+    .cell {
+      width: 85px;
+      height: 85px;
+      background-color: rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .bloqueado {
+      background-color: rgba(100, 100, 100, 0.3);
+      border: 2px dashed #444;
+    }
+    .caminho {
+      background-color: #fef6e4;
+      background-image: url('trilha.png');
+      background-size: cover;
+    }
+    .cocar {
+      background-image: url('cocar.png');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+    }
+
+    /* Imagem do Kamé */
+    .kame { 
+      background-image: url("kame-removebg.png"); 
+      background-size: contain; 
+      color: white; 
+      font-weight: bold;
+    }
+
+    /* Imagem do Kairu */
+    .kairu { 
+      background-image: url("kairu-removebg.png"); 
+      background-size: contain; 
+      background-repeat: no-repeat;
+      background-position: center;
+      color: #00d; 
+      font-weight: bold;
+    }
+
+    .caminhoT {
+      background-image: url("caminho_T.png");
+      background-size: contain; 
+      background-repeat: no-repeat;
+      background-position: center;
+    }
+
+    .caminhoMais {
+      background-image: url("caminho_+.png");
+      background-size: contain; 
+      background-repeat: no-repeat;
+      background-position: center;
+    }
+
+    /* Estilos para os comandos e botões */
+    .commands h3 {
+      color: #fff;
+      text-shadow: 1px 1px 3px #000;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(3, 80px);
+      grid-template-rows: repeat(3, 80px);
+      gap: 5px;
+      justify-content: center;
+    }
+
+    #controls {
+      margin-bottom: 0;
+    }
+
+    .btn {
+      background: radial-gradient(circle at center, #ffffff, #cfe4ff);
+      border: 3px solid #2980b9;
+      border-radius: 20px;
+      font-size: 25px;
+      font-weight: bold;
+      color: #2c3e50;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      cursor: pointer;
+      transition: transform 0.2s, background 0.3s;
+    }
+
+    .btn:hover {
+      transform: scale(1.1);
+      background: radial-gradient(circle at center, #d6f0ff, #a8d8ff);
+    }
+
+    .btn:active {
+      transform: scale(0.95);
+    }
+
+    #commandList {
+      font-size: 28px;
+      font-weight: bold;
+      color: white;
+      text-shadow: 1px 1px 2px black;
+    }
+
+    #message {
+     font-size: 28px;
+     font-weight: bold;
+     color: #d00;
+     text-shadow: 2px 2px 4px white;
+    }
+
+
+  </style>
+</head>
+<body>
+
+  <h1>Kamé e Kairu - Desafio Lógico</h1>
+  <div id="grid" class="grid"></div>
+
+  <div class="commands">
+    <div id="commandList"></div>
+    <div class="controls">
+      <div></div>
+      <button class="btn" onclick="addCommand('cima')">⬆️</button>
+      <div></div>
+      <button class="btn" onclick="addCommand('esquerda')">⬅️</button>
+      <button class="btn" onclick="addCommand('baixo')">⬇️</button>
+      <button class="btn" onclick="addCommand('direita')">➡️</button>
+    </div>
+    <div id="message"></div>
+    <button class="btn" style="width: 200px;"       onclick="runCommands()">▶️ Executar</button>
+    <button class="btn" style="width: 200px; background: radial-gradient(circle at center, #ffe1e1, #ff8e8e); border-color: #c0392b;" onclick="resetGame()">🔄 Resetar</button>
+    
+  </div>
+
+  <script>
+    const gridSize = 5;
+    const startPos = { x: 0, y: 4 };
+    const kairuPos = { x: 4, y: 0 };
+    const caminhoTPos = { x:3, y: 0};
+    const caminhoT2Pos = { x:2, y: 0};
+    //const caminhoMaisPos = { x:1, y: 1);
+    let playerPos = { ...startPos };
+    let commands = [];
+    
+
+
+    function createGrid() {
+      const grid = document.getElementById('grid');
+      grid.innerHTML = '';
+      for (let y = 0; y < gridSize; y++) {
+        for (let x = 0; x < gridSize; x++) {
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+          if (x === playerPos.x && y === playerPos.y) {
+            cell.classList.add('kame');
+          } else if (x === kairuPos.x && y === kairuPos.y) {
+            cell.classList.add('kairu');
+          } else if (x === caminhoTPos.x && y === caminhoTPos.y) {
+  	    cell.classList.add('caminhoT');
+          } else if (x === caminhoT2Pos.x && y === caminhoT2Pos.y) {
+  	    cell.classList.add('caminhoT');
+          } //else if (x === caminhoMaisPos.x && y === caminhoMaisPos.y) {
+  	 //   cell.classList.add('caminhoMais');
+         // }
+          grid.appendChild(cell);
+        }
+      }
+    }
+
+   function addCommand(cmd) {
+      let arrow = '';
+      switch (cmd) {
+        case 'cima': arrow = '⬆️'; break;
+        case 'baixo': arrow = '⬇️'; break;
+        case 'esquerda': arrow = '⬅️'; break;
+        case 'direita': arrow = '➡️'; break;
+      }
+      commands.push(cmd);
+      document.getElementById('commandList').textContent = commands.map(c => {
+        switch (c) {
+          case 'cima': return '⬆️';
+          case 'baixo': return '⬇️';
+          case 'esquerda': return '⬅️';
+          case 'direita': return '➡️';
+        }
+      }).join(' ');
+      document.getElementById('message').textContent = '';
+    }
+
+    async function runCommands() {
+      for (const cmd of commands) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        movePlayer(cmd);
+        createGrid();
+      }
+
+      if (playerPos.x === kairuPos.x && playerPos.y === kairuPos.y) {
+        document.getElementById('message').textContent = '🎉 Parabéns! Kamé encontrou o Kairu!';
+      } else {
+        document.getElementById('message').textContent = '❌ Kamé se perdeu! Tente de novo.';
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        resetGame();
+      }
+    }
+
+    function movePlayer(direction) {
+      if (direction === 'cima' && playerPos.y > 0) playerPos.y--;
+      if (direction === 'baixo' && playerPos.y < gridSize - 1) playerPos.y++;
+      if (direction === 'esquerda' && playerPos.x > 0) playerPos.x--;
+      if (direction === 'direita' && playerPos.x < gridSize - 1) playerPos.x++;
+    }
+
+    function resetGame() {
+      playerPos = { ...startPos };
+      commands = [];
+      document.getElementById('commandList').textContent = '';
+      document.getElementById('message').textContent = '';
+      createGrid();
+    }
+
+    createGrid();
+  </script>
+
+</body>
+</html>
